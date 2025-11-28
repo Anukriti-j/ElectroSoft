@@ -1,8 +1,5 @@
 import Foundation
 
-import Foundation
-import Observation
-
 @MainActor
 final class AlertManager: ObservableObject {
     @Published var currentAlert: AppAlert? = nil
