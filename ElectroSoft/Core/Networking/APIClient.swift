@@ -8,8 +8,7 @@ protocol NetworkingProtocol {
 }
 
 final class APIClient: NetworkingProtocol {
-
-    private let baseURL = "https://your-api.com"
+    
     private let keychain: KeyChainManaging
 
     init(keychain: KeyChainManaging) {
@@ -21,7 +20,9 @@ final class APIClient: NetworkingProtocol {
         responseType: T.Type
     ) async throws -> APIResponse<T> {
 
-        var request = endpoint.urlRequest(baseURL: baseURL)
+        var request = endpoint.urlRequest(baseURL: APIConstants.baseURL)
+        
+        LoggerInterceptor.logRequest(request)
 
         if endpoint.requiresAuth,
            let token = keychain.read(.accessToken) {
@@ -29,6 +30,7 @@ final class APIClient: NetworkingProtocol {
         }
 
         let (data, response) = try await URLSession.shared.data(for: request)
+        LoggerInterceptor.logResponse(data: data, response: response)
         let http = response as! HTTPURLResponse
 
         // Token expired → refresh → retry
@@ -48,8 +50,8 @@ final class APIClient: NetworkingProtocol {
 
         let endpoint = AuthEndpoints.refreshToken(refresh)
 
-        let result: APIResponse<LoginData> =
-            try await request(endpoint: endpoint, responseType: LoginData.self)
+        let result: APIResponse<LoginResponse> =
+            try await request(endpoint: endpoint, responseType: LoginResponse.self)
 
         guard result.success, let data = result.data else {
             return false

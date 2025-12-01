@@ -60,7 +60,7 @@ enum TabItem: String, CaseIterable, Identifiable, Equatable {
     }
 
     @ViewBuilder
-    var destination: some View {
+    func destination(locationRepo: LocationRepository, addEmployeeRepo: AddEmployeeRepository) -> some View {
         switch self {
         case .dashboard:
              DashboardView()
@@ -69,7 +69,7 @@ enum TabItem: String, CaseIterable, Identifiable, Equatable {
         case .client:
             ClientListView()
         case .addEmployee:
-            EmployeeListView()
+            AddEmployeeView(locationRepo: locationRepo, addEmployeeRepo: addEmployeeRepo)
         case .bill:
             MeterBillView()
         case .issues:

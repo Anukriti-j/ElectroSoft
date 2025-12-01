@@ -19,12 +19,12 @@ struct UserProfileView: View {
                             .foregroundColor(themeManager.colors.primaryText)
                             .lineLimit(1)
                         
-                        Text(session.user?.email ?? "No email")
+                        Text(session.user?.contactNo ?? "No Contact")
                             .font(.caption)
                             .foregroundColor(themeManager.colors.secondaryText)
                             .lineLimit(1)
                         
-                        Text(session.userRole.rawValue.capitalized)
+                        Text(session.roles.map { $0.rawValue }.joined(separator: ","))
                             .font(.subheadline.bold())
                             .customRoleStyle()
                     }

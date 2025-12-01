@@ -10,7 +10,7 @@ extension AuthEndpoints: Endpoint {
     var path: String {
         switch self {
         case .login:
-            return "/auth/login"
+            return "/auth/sign-in"
         case .refreshToken:
             return "/auth/refresh-token"
         }

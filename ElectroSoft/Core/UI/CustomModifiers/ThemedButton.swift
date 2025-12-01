@@ -5,7 +5,7 @@ struct ThemedButtonStyle: ButtonStyle {
     var isDisabled: Bool
     
     func makeBody(configuration: Configuration) -> some View {
-        let bgColor = isDisabled ? theme.colors.buttonSecondary : theme.colors.buttonPrimary
+        let bgColor = isDisabled ? .gray : theme.colors.buttonPrimary
         let textColor = isDisabled ? theme.colors.secondaryText : theme.colors.primaryText
         
         return configuration.label

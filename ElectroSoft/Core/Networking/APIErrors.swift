@@ -14,16 +14,16 @@ enum APIError: Error, LocalizedError {
     
     var errorDescription: String? {
         switch self {
-        case .invalidURL: return ErrorMessages.invalidURL
-        case .invalidResponse: return ErrorMessages.invalidResponse
-        case .decodingError: return ErrorMessages.decodingError
-        case .unauthorized: return ErrorMessages.unauthorized
-        case .notFound: return ErrorMessages.notFound
+        case .invalidURL: return ErrorMessages.invalidURL.errorDescription
+        case .invalidResponse: return ErrorMessages.invalidResponse.errorDescription
+        case .decodingError: return ErrorMessages.decodingError.errorDescription
+        case .unauthorized: return ErrorMessages.unauthorized.errorDescription
+        case .notFound: return ErrorMessages.notFound.errorDescription
         case .serverError(let message): return message
         case .serverMessage(let message): return message
-        case .forbidden: return ErrorMessages.forbidden
-        case .unknown: return ErrorMessages.unknown
-        case .invalidData: return ErrorMessages.invalidData
+        case .forbidden: return ErrorMessages.forbidden.errorDescription
+        case .unknown: return ErrorMessages.unknown.errorDescription
+        case .invalidData: return ErrorMessages.invalidData.errorDescription
         }
     }
 }

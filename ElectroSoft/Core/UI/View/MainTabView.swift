@@ -2,16 +2,20 @@ import SwiftUI
 
 struct MainTabView: View {
     @EnvironmentObject var session: SessionManager
-    @State private var selectedTab: TabItem = .dashboard
-    @State private var isProfileOpen = false
-
+    @EnvironmentObject var themeManager: ThemeManager
+    @State var selectedTab: TabItem = .dashboard
+    @State var isProfileOpen = false
+    let locationRepo: LocationRepository
+    let addEmployeeRepo: AddEmployeeRepository
+    
     var body: some View {
-        let roleTabs = tabs(for: session.userRole)
+        let roleTabs = tabs(forRole: session.roles,forType: session.userType ?? .unknown)
         
         ZStack(alignment: .leading) {
             ZStack(alignment: .bottom) {
                 NavigationStack {
-                    selectedTab.destination
+                    selectedTab
+                        .destination(locationRepo: locationRepo, addEmployeeRepo: addEmployeeRepo)
                         .navigationTitle(selectedTab.title)
                         .navigationBarTitleDisplayMode(.inline)
                         .toolbar {
@@ -23,6 +27,7 @@ struct MainTabView: View {
                                 } label: {
                                     Image(systemName: "person.crop.circle.fill")
                                         .resizable()
+                                        .foregroundStyle(themeManager.colors.primary)
                                         .frame(width: 42, height: 42)
                                 }
                             }
@@ -60,19 +65,36 @@ struct MainTabView: View {
             selectedTab = roleTabs.first ?? .dashboard
         }
     }
-
-    func tabs(for role: UserRole) -> [TabItem] {
-        switch role {
-        case .ServiceOwner, .ServiceStateHead, .ServiceDistrictHead, .ServiceCityHead:
-            return [.dashboard, .addEmployee, .employee, .client]
-        case .Representative, .ServiceSupport, .Worker:
-            return [.dashboard, .client, .invoice, .plan]
-        case .ClientIndianHead, .ClientStateHead, .ClientDistrictHead, .ClientCityHead, .ClientSupport:
-            return [.dashboard, .employee, .issues, .bill]
-        case .Customer:
-            return [.bill, .issues]
-        case .unknown:
-            return [.fallback]
+    
+    func tabs(forRole roles: [Roles], forType type: UserType) -> [TabItem] {
+        if type == .service {
+            if roles.contains(.owner) ||
+                roles.contains(.stateHead) ||
+                roles.contains(.districtHead) ||
+                roles.contains(.talukaHead) {
+                return [.dashboard, .addEmployee, .employee, .client]
+            }
+            
+            if roles.contains(.representative) ||
+                roles.contains(.support) ||
+                roles.contains(.worker) {
+                return [.dashboard, .client, .invoice, .plan]
+            }
+        } else if type == .client {
+            if roles.contains(.owner) ||
+                roles.contains(.stateHead) ||
+                roles.contains(.districtHead) ||
+                roles.contains(.talukaHead) ||
+                roles.contains(.support) {
+                return [.dashboard, .employee, .bill, .issues]
+            }
+        } else if type == .customer {
+            if roles.contains(.customer) {
+                return [.bill, .issues]
+            }
         }
+        
+        
+        return [.fallback]
     }
 }

@@ -1,8 +1,10 @@
 import Foundation
+import SwiftUI
 
+@MainActor
 final class LoginViewModel: ObservableObject {
     @Published var email = ""
-    @Published var password = ""
+    @Published var password = "" 
     
     @Published var emailTouched = false
     @Published var passwordTouched = false
@@ -13,37 +15,64 @@ final class LoginViewModel: ObservableObject {
     @Published var emailError: String?
     @Published var passwordError: String?
     
+    @Published var alert: AppAlert?
+    @Published var isAlertPresented = false
+    
+    private let authRepo: AuthRepository
+    
+    init(authRepo: AuthRepository) {
+        self.authRepo = authRepo
+    }
+    
     var isFormValid: Bool {
         emailError == nil && passwordError == nil
     }
     
-    func login() {
-        isLoading = true
-        defer {
-            isLoading = false
+    func validateEmail() {
+        guard emailTouched else { return }
+        do {
+            try FormValidator.validateEmail(email)
+            emailError = nil
+        } catch {
+            emailError = error.localizedDescription
         }
-        print("Login")
     }
-}
-
-extension LoginViewModel {
-    func validate() {
-        if emailTouched {
-            if email.isEmpty {
-                emailError = ErrorMessages.requiredEmail
-            } else if !FormValidator.isValidEmail(email) {
-                emailError = ErrorMessages.invalidEmail
-            } else {
-                emailError = nil
-            }
+    
+    func validatePassword() {
+        guard passwordTouched else { return }
+        do {
+            try FormValidator.notEmptyField(password)
+            passwordError = nil
+        } catch {
+            passwordError = error.localizedDescription
         }
+    }
+    
+    func login() async {
+        emailTouched = true
+        passwordTouched = true
         
-        if passwordTouched {
-            if password.isEmpty {
-                passwordError = ErrorMessages.requiredPassword
-            } else {
-                passwordError = nil
-            }
+        validateEmail()
+        validatePassword()
+        
+        guard isFormValid else { return }
+        
+        isLoading = true
+        defer { isLoading = false }
+        
+        do {
+            let response = try await authRepo.login(email: email, password: password)
+            alert = AppAlert.simple(
+                title: "Login Success",
+                message: "Welcome, \(response.userDetails.name)!"
+            )
+            isAlertPresented = true
+        } catch {
+            alert = AppAlert.simple(
+                title: "Login Failed",
+                message: error.localizedDescription
+            )
+            isAlertPresented = true
         }
     }
 }

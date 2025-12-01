@@ -1,18 +1,21 @@
 import Foundation
 
-enum UserRole: String, Codable {
-    case ServiceOwner = "ServiceOwner"
-    case ServiceStateHead = "ServiceStateHead"
-    case ServiceDistrictHead = "ServiceDistrictHead"
-    case ServiceCityHead = "ServiceCityHead"
-    case Representative = "Representative"
-    case ServiceSupport = "ServiceSupport"
-    case Worker = "Worker"
-    case ClientIndianHead = "ClientIndianHead"
-    case ClientStateHead = "ClientStateHead"
-    case ClientDistrictHead = "ClientDistrictHead"
-    case ClientCityHead = "ClientCityHead"
-    case ClientSupport = "ClientSupport"
-    case Customer = "Customer"
+enum Roles: String, Codable, CaseIterable {
+    case owner = "Owner"
+    case clientHead = "Clienthead"
+    case stateHead = "Statehead"
+    case districtHead = "Districthead"
+    case talukaHead = "Talukahead"
+    case support = "Support"
+    case worker = "Worker"
+    case customer = "Customer"
+    case representative = "Representative"
     case unknown = "Unknown"
 }
+
+extension Roles {
+    init(raw: String) {
+        self = Roles(rawValue: raw) ?? .unknown
+    }
+}
+

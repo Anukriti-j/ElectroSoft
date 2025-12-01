@@ -5,14 +5,23 @@ struct RootView: View {
     @EnvironmentObject private var theme: ThemeManager
     @EnvironmentObject private var session: SessionManager
     @StateObject private var networkMonitor = NetworkMonitor()
+    let locationRepo: LocationRepository
+    let authRepo: AuthRepository
+    let addEmployeeRepo: AddEmployeeRepository
+    
+    init(locationRepo: LocationRepository, authRepo: AuthRepository, addEmployeeRepo: AddEmployeeRepository) {
+        self.locationRepo = locationRepo
+        self.authRepo = authRepo
+        self.addEmployeeRepo = addEmployeeRepo
+    }
     
     var body: some View {
         Group {
             if networkMonitor.isConnected {
                 if session.isLoggedIn {
-                    MainTabView()
+                    MainTabView(locationRepo: locationRepo, addEmployeeRepo: addEmployeeRepo)
                 } else {
-                    LoginView()
+                    LoginView(authRepo: authRepo)
                         .onAppear {
                             syncThemeWithSystem()
                             session.restoreSession()}

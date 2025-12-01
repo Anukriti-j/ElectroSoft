@@ -1,50 +1,67 @@
 import SwiftUI
 
-//enum AppEntryScreen {
-//    case dashboard
-//    case task
-//}
-
+@MainActor
 final class SessionManager: ObservableObject {
-
+    
+    @Published var isLoggedIn = false
+    @Published var user: UserDetails?
+    @Published var userType: UserType?
+    @Published var roles: [Roles] = []
     private let keychain: KeyChainManager
-    private let authRepo: AuthRepository
-
-    @Published var isLoggedIn = true
-    @Published var user: LoginData?
-   // var landingScreen: AppEntryScreen?
-    @Published var userRole: UserRole = .ServiceOwner
-
-    init(keychain: KeyChainManager, authRepo: AuthRepository) {
+    
+    init(keychain: KeyChainManager) {
         self.keychain = keychain
-        self.authRepo = authRepo
     }
-
+    
     func restoreSession() {
         if keychain.read(.accessToken) != nil {
             isLoggedIn = true
         }
     }
-
-    func login(email: String, password: String) async {
-        do {
-            let userData = try await authRepo.login(email: email, password: password)
-
-            keychain.save(.accessToken, value: userData.accessToken)
-            keychain.save(.refreshToken, value: userData.refreshToken)
-            self.userRole = .ServiceOwner
-            self.user = userData
-            self.isLoggedIn = true
-
-        } catch {
-            print("Login Error:", error.localizedDescription)
-        }
+   
+    func setUpUserSession(user: UserDetails) {
+        self.isLoggedIn = true
+        self.user = UserDetails(
+            id: user.id,
+            name: user.name,
+            contactNo: user.contactNo,
+            userType: user.userType,
+            roles: user.roles
+        )
+        self.userType = UserType(rawValue: user.userType)
+        //self.roles = user.roles.map { $0 }
     }
-
+    
+    func saveToken(accessToken: String, refreshToken: String) {
+        keychain.save(.accessToken, value: accessToken)
+        keychain.save(.refreshToken, value: refreshToken)
+    }
+    
     func logout() {
         keychain.delete(.accessToken)
         keychain.delete(.refreshToken)
         user = nil
+        roles = []
+        userType = nil
         isLoggedIn = false
+    }
+}
+
+extension SessionManager {
+    
+    var isServiceUser: Bool {
+        userType == .service
+    }
+    
+    var isClientUser: Bool {
+        userType == .client
+    }
+    
+    var isCustomer: Bool {
+        userType == .customer
+    }
+    
+    func hasRole(_ role: Roles) -> Bool {
+        roles.contains(role)
     }
 }

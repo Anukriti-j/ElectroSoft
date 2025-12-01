@@ -1,62 +1,57 @@
 import SwiftUI
 
 struct LoginView: View {
-    @StateObject private var viewModel = LoginViewModel()
+    @StateObject private var viewModel: LoginViewModel
     @EnvironmentObject var themeManager: ThemeManager
+    
+    init(authRepo: AuthRepository) {
+        _viewModel = StateObject(wrappedValue: LoginViewModel(authRepo: authRepo))
+    }
     
     var body: some View {
         VStack(spacing: 16) {
+            
             Text("ElectroSoft")
                 .font(.system(size: 32, weight: .bold))
                 .foregroundColor(themeManager.colors.primary)
             
             Text("LOG IN")
-                .fontWeight(.bold)
-                .fontDesign(.rounded)
-                .padding()
+                .font(.title2.bold())
+                .padding(.bottom, 8)
             
             VStack(alignment: .leading, spacing: 8) {
-                TextField(StringConstants.email, text: $viewModel.email)
+                TextField("Email", text: $viewModel.email)
                     .themedInput()
-                    .onSubmit {
+                    .onTapGesture {
                         viewModel.emailTouched = true
-                        viewModel.validate()
                     }
-                    .onChange(of: viewModel.email) {
-                        if viewModel.emailTouched { viewModel.validate() }
+                    .onChange(of: viewModel.email) { _ in
+                        viewModel.validateEmail()
                     }
                 
                 if viewModel.emailTouched, let error = viewModel.emailError {
                     Text(error)
-                        .foregroundStyle(themeManager.colors.error)
+                        .foregroundColor(themeManager.colors.error)
                         .font(.caption)
                 }
             }
-            
+           
             VStack(alignment: .leading, spacing: 8) {
                 ZStack(alignment: .trailing) {
-                    if viewModel.showPassword {
-                        TextField(StringConstants.password, text: $viewModel.password)
-                            .themedInput()
-                            .onSubmit {
-                                viewModel.passwordTouched = true
-                                viewModel.validate()
-                            }
-                            .onChange(of: viewModel.password) {
-                                if viewModel.passwordTouched { viewModel.validate() }
-                            }
-                        
-                    } else {
-                        SecureField(StringConstants.password, text: $viewModel.password)
-                            .themedInput()
-                            .onSubmit {
-                                viewModel.passwordTouched = true
-                                viewModel.validate()
-                            }
-                            .onChange(of: viewModel.password) {
-                                if viewModel.passwordTouched { viewModel.validate() }
-                            }
-
+                    
+                    Group {
+                        if viewModel.showPassword {
+                            TextField("Password", text: $viewModel.password)
+                        } else {
+                            SecureField("Password", text: $viewModel.password)
+                        }
+                    }
+                    .themedInput()
+                    .onTapGesture {
+                        viewModel.passwordTouched = true
+                    }
+                    .onChange(of: viewModel.password) { _ in
+                        viewModel.validatePassword()
                     }
                     
                     Button(action: {
@@ -70,35 +65,42 @@ struct LoginView: View {
                 
                 if viewModel.passwordTouched, let error = viewModel.passwordError {
                     Text(error)
-                        .foregroundStyle(themeManager.colors.error)
+                        .foregroundColor(themeManager.colors.error)
                         .font(.caption)
                 }
             }
             
             Button {
-                viewModel.emailTouched = true
-                    viewModel.passwordTouched = true
-                    viewModel.validate()
-
-                    if viewModel.isFormValid {
-                        viewModel.login()
-                    }
+                Task { await viewModel.login() }
             } label: {
                 if viewModel.isLoading {
-                    ProgressView()
-                        .tint(.white)
+                    ProgressView().tint(.white)
                 } else {
                     Text("Login")
                         .foregroundColor(.white)
                 }
             }
-            .disabled(viewModel.isLoading)
-            .themedButton(isDisabled: !viewModel.isFormValid)
+            .disabled(!viewModel.isFormValid || viewModel.isLoading)
+            .themedButton(isDisabled: !viewModel.isFormValid || viewModel.isLoading)
+            
+            
         }
         .padding(.horizontal)
+        .alert(isPresented: $viewModel.isAlertPresented) {
+            Alert(
+                title: Text(viewModel.alert?.title ?? ""),
+                message: Text(viewModel.alert?.message ?? ""),
+                dismissButton: .default(Text(viewModel.alert?.primaryButtonTitle ?? "OK"))
+            )
+        }
     }
 }
 
 #Preview {
-    LoginView()
+    LoginView(
+        authRepo: AuthRepository(
+            api: APIClient(keychain: KeyChainManager()),
+            session: SessionManager(keychain: KeyChainManager())
+        )
+    )
 }
