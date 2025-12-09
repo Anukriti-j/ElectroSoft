@@ -49,7 +49,7 @@ final class ClientRepository: ClientRepositoryProtocol {
         )
         
         guard let data = apiResponse.data else {
-            let message = apiResponse.errorMessage ?? "Failed to fetch clients."
+            let message = apiResponse.errorMessage ?? StringConstants.failedToFetchData
             throw APIError.serverMessage(message)
         }
         

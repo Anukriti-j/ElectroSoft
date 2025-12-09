@@ -69,7 +69,7 @@ final class EmployeeListViewModel: ObservableObject {
             currentPage += 1
             viewState = employees.isEmpty ? .empty : .loaded
         } catch {
-            viewState = .error("Failed to load employees")
+            viewState = .error(StringConstants.failedToFetchData)
             employees = generateDummyData()
         }
     }

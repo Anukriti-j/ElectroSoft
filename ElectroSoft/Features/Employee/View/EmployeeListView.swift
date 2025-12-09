@@ -23,7 +23,7 @@ struct EmployeeListView: View {
             
             employeeList
         }
-        .navigationTitle("Employees")
+        .navigationTitle(StringConstants.employee)
         .navigationBarTitleDisplayMode(.inline)
         .task {
             if viewModel.employees.isEmpty {
@@ -33,7 +33,7 @@ struct EmployeeListView: View {
         .searchable(
             text: $viewModel.searchText,
             placement: .navigationBarDrawer(displayMode: .always),
-            prompt: "Search employees..."
+            prompt: StringConstants.searchEmployee
         )
         .onChange(of: viewModel.searchText) { _, newValue in
             viewModel.updateSearchText(newValue)
@@ -130,21 +130,13 @@ struct EmployeeListView: View {
             Image(systemName: viewModel.viewState == .empty ? "person.3.fill" : "wifi.exclamationmark")
                 .font(.system(size: 50))
             
-            Text(viewModel.viewState == .empty ? "No Employees Found" : "Something Went Wrong")
+            Text(viewModel.viewState == .empty ? StringConstants.noDataFound : StringConstants.somethingWentWrong)
                 .font(.headline)
-            
-            Text(
-                viewModel.viewState == .empty
-                ? "Try adjusting your filters or search criteria."
-                : "Could not load employees. Please try again."
-            )
-            .font(.subheadline)
-            .multilineTextAlignment(.center)
             
             Button {
                 Task { await viewModel.fetchEmployees(reset: true) }
             } label: {
-                Label("Retry", systemImage: "arrow.clockwise")
+                Label(StringConstants.retry, systemImage: "arrow.clockwise")
                     .font(.callout.bold())
             }
             .themedButton(isDisabled: isRefreshing)

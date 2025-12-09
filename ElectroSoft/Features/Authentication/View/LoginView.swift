@@ -23,11 +23,11 @@ struct LoginView: View {
             VStack(spacing: 0) {
                 
                 VStack(spacing: 12) {
-                    Text("ElectroSoft")
+                    Text(StringConstants.appName)
                         .font(.system(size: 34, weight: .bold))
                         .foregroundColor(themeManager.currentTheme.text)
                     
-                    Text("Sign in to your account")
+                    Text(StringConstants.signInAccount)
                         .font(.subheadline)
                         .foregroundColor(themeManager.currentTheme.text.opacity(0.6))
                 }
@@ -47,7 +47,7 @@ struct LoginView: View {
                 Spacer()
                 
                 VStack(spacing: 20) {
-                    Text("Customize Appearance")
+                    Text(StringConstants.customizeAppearance)
                         .font(.caption)
                         .fontWeight(.medium)
                         .foregroundColor(themeManager.currentTheme.text.opacity(0.5))
@@ -66,9 +66,9 @@ struct LoginView: View {
         }
         .alert(isPresented: $viewModel.isAlertPresented) {
             Alert(
-                title: Text(viewModel.alert?.title ?? "Error"),
+                title: Text(viewModel.alert?.title ?? StringConstants.error),
                 message: Text(viewModel.alert?.message ?? ""),
-                dismissButton: .default(Text(viewModel.alert?.primaryButtonTitle ?? "OK"))
+                dismissButton: .default(Text(viewModel.alert?.primaryButtonTitle ?? StringConstants.ok))
             )
         }
         .ignoresSafeArea(.keyboard, edges: .bottom)
@@ -79,12 +79,12 @@ struct LoginView: View {
     
     private var emailField: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Email Address")
+            Text(StringConstants.email)
                 .font(.caption)
                 .fontWeight(.medium)
                 .foregroundColor(themeManager.currentTheme.text.opacity(0.7))
             
-            TextField("Enter email", text: $viewModel.email)
+            TextField(StringConstants.enterEmail, text: $viewModel.email)
                 .focused($focusedField, equals: .email)
                 .textInputAutocapitalization(.never)
                 .keyboardType(.emailAddress)
@@ -108,17 +108,17 @@ struct LoginView: View {
     
     private var passwordField: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Password")
+            Text(StringConstants.password)
                 .font(.caption)
                 .fontWeight(.medium)
                 .foregroundColor(themeManager.currentTheme.text.opacity(0.7))
             
             HStack {
                 if viewModel.showPassword {
-                    TextField("Enter password", text: $viewModel.password)
+                    TextField(StringConstants.enterPassword, text: $viewModel.password)
                         .focused($focusedField, equals: .password)
                 } else {
-                    SecureField("Enter password", text: $viewModel.password)
+                    SecureField(StringConstants.enterPassword, text: $viewModel.password)
                         .focused($focusedField, equals: .password)
                 }
                 
@@ -159,7 +159,7 @@ struct LoginView: View {
                     ProgressView()
                         .tint(.white)
                 } else {
-                    Text("Log In")
+                    Text(StringConstants.login)
                         .fontWeight(.bold)
                 }
             }

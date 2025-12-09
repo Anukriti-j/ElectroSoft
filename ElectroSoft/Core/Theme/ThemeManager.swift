@@ -11,10 +11,10 @@ final class ThemeManager: ObservableObject {
         }
     }
     
-    private let userDefaultsKey = "selected_theme_preference"
+    private let userDefaultsKey = StringConstants.savedThemeKey
     
     init() {
-        let savedRawValue = UserDefaults.standard.string(forKey: "selected_theme_preference") ?? ThemeType.electroBlue.rawValue
+        let savedRawValue = UserDefaults.standard.string(forKey: userDefaultsKey) ?? ThemeType.electroBlue.rawValue
         let type = ThemeType(rawValue: savedRawValue) ?? .electroBlue
         
         self.selectedType = type

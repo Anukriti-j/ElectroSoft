@@ -16,6 +16,7 @@ enum ErrorMessages: LocalizedError {
     case invalidEmail
     case invalidPhone
     case requiredPhone
+    case invalidCredential
 }
 
 extension ErrorMessages {
@@ -51,6 +52,8 @@ extension ErrorMessages {
             return "Phone number must be 10 digits."
         case .requiredPhone:
             return "Phone number is required."
+        case .invalidCredential:
+            return "Invalid Credential"
         }
     }
 }

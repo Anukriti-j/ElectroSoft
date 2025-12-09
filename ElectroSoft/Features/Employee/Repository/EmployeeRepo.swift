@@ -45,7 +45,7 @@ final class EmployeeRepository: EmployeeRepositoryProtocol {
         )
         
         guard let data = response.data else {
-            let errorMessage = response.errorMessage ?? "Failed to fetch employees."
+            let errorMessage = response.errorMessage ?? StringConstants.failedToFetchData
             throw APIError.serverMessage(errorMessage)
         }
         return data
@@ -60,7 +60,7 @@ final class EmployeeRepository: EmployeeRepositoryProtocol {
         )
         
         if !response.success {
-            throw APIError.serverMessage(response.errorMessage ?? "Delete failed")
+            throw APIError.serverMessage(response.errorMessage ?? StringConstants.deleteFailed)
         }
     }
 }

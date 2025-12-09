@@ -20,7 +20,7 @@ struct ClientListView: View {
             
             clientList
         }
-        .navigationTitle("Clients")
+        .navigationTitle(StringConstants.clients)
         .navigationBarTitleDisplayMode(.inline)
         .task {
             if viewModel.clients.isEmpty {
@@ -29,7 +29,7 @@ struct ClientListView: View {
         }
         .searchable(text: $viewModel.searchText,
                     placement: .navigationBarDrawer(displayMode: .always),
-                    prompt: "Search clients...")
+                    prompt: StringConstants.searchClient)
         .onChange(of: viewModel.searchText) { _, newValue in
             viewModel.updateSearchText(newValue)
         }
@@ -119,19 +119,14 @@ struct ClientListView: View {
                 .font(.system(size: 50))
                 .foregroundColor(viewModel.viewState == .empty ? .gray : themeManager.currentTheme.error)
             
-            Text(viewModel.viewState == .empty ? "No Clients Found" : "Something Went Wrong")
+            Text(viewModel.viewState == .empty ? StringConstants.noDataFound : StringConstants.somethingWentWrong)
                 .font(.headline)
                 .foregroundColor(.secondary)
-            
-            Text(viewModel.viewState == .empty ? "Try adjusting your filters or search criteria." : "Could not load clients. Please try again.")
-                .font(.subheadline)
-                .foregroundColor(.gray)
-                .multilineTextAlignment(.center)
             
             Button {
                 Task { await retryLoad() }
             } label: {
-                Label("Retry", systemImage: "arrow.clockwise")
+                Label(StringConstants.retry, systemImage: "arrow.clockwise")
                     .font(.callout.bold())
             }
             .themedButton(isDisabled: isRefreshing)

@@ -22,8 +22,11 @@ final class AuthRepository: AuthRepositoryProtocol {
         )
         
         guard response.success, let data = response.data else {
-            let errorMessage = response.errorMessage ?? "Invalid email or password."
-            throw APIError.serverMessage(errorMessage)
+            if let errorMessage = response.errorMessage {
+                throw APIError.serverMessage(errorMessage)
+            } else {
+                throw ErrorMessages.invalidCredential
+            }
         }
         
         await session.setUpUserSession(user: data.userDetails)
