@@ -1,66 +1,31 @@
 import SwiftUI
 
-struct ThemeFonts {
-    let heading: Font
-    let subheading: Font
-    let body: Font
-}
-
-struct ThemeColors {
-    let primary: Color
-    let secondary: Color
-    let background: Color
-    let cardBackground: Color
-    let primaryText: Color
-    let secondaryText: Color
-    let buttonPrimary: Color
-    let buttonSecondary: Color
-    let error: Color
-    let success: Color
-    let fonts: ThemeFonts
-}
-
-enum AppThemeType {
-    case light
-    case dark
-    case clientCustom
-}
-
 final class ThemeManager: ObservableObject {
-    
-    @Published var currentTheme: AppThemeType = .light
-    
-    @Published private var clientCustomTheme: ThemeColors?
-    
-    var colors: ThemeColors {
-        switch currentTheme {
-        case .light: return AppColors.light
-        case .dark: return AppColors.dark
-        case .clientCustom:
-            return clientCustomTheme ?? AppColors.light
+    @Published var currentTheme: AppTheme
+    @Published var selectedType: ThemeType {
+        didSet {
+            withAnimation(.easeInOut(duration: 0.3)) {
+                currentTheme = AppTheme.get(selectedType)
+            }
+            saveTheme()
         }
     }
-   
-    func setTheme(_ theme: AppThemeType) {
-        currentTheme = theme
+    
+    private let userDefaultsKey = "selected_theme_preference"
+    
+    init() {
+        let savedRawValue = UserDefaults.standard.string(forKey: "selected_theme_preference") ?? ThemeType.electroBlue.rawValue
+        let type = ThemeType(rawValue: savedRawValue) ?? .electroBlue
+        
+        self.selectedType = type
+        self.currentTheme = AppTheme.get(type)
     }
     
-    func setClientCustomTheme(
-        primary: Color,
-        secondary: Color,
-        background: Color,
-        headingFont: Font,
-        subheadingFont: Font,
-        bodyFont: Font
-    ) {
-        clientCustomTheme = AppColors.clientTheme(
-            primary: primary,
-            secondary: secondary,
-            background: background,
-            headingFont: headingFont,
-            subheadingFont: subheadingFont,
-            bodyFont: bodyFont
-        )
-        currentTheme = .clientCustom
+    func applyTheme(_ type: ThemeType) {
+        self.selectedType = type
+    }
+    
+    private func saveTheme() {
+        UserDefaults.standard.setValue(selectedType.rawValue, forKey: userDefaultsKey)
     }
 }

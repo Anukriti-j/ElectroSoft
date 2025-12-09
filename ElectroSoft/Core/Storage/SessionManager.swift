@@ -3,33 +3,56 @@ import SwiftUI
 @MainActor
 final class SessionManager: ObservableObject {
     
-    @Published var isLoggedIn = false
+    @Published var isLoggedIn = true
     @Published var user: UserDetails?
     @Published var userType: UserType?
     @Published var roles: [Roles] = []
-    private let keychain: KeyChainManager
     
-    init(keychain: KeyChainManager) {
+    private let keychain: KeyChainManaging
+    
+    init(keychain: KeyChainManaging) {
         self.keychain = keychain
+        
+        self.userType = .service
+        self.roles = [.owner]
+        self.user = UserDetails(
+            id: "999",
+            name: "Developer",
+            contactNo: "1234567890",
+            userType: "service",
+            roles: ["Owner"]
+        )
+        self.isLoggedIn = true
     }
     
     func restoreSession() {
-        if keychain.read(.accessToken) != nil {
-            isLoggedIn = true
+        DispatchQueue.main.async { [weak self] in
+            self?.setupMockSession()
         }
     }
-   
-    func setUpUserSession(user: UserDetails) {
-        self.isLoggedIn = true
+    
+    private func setupMockSession() {
+        self.userType = .service
+        self.roles = [.owner]
         self.user = UserDetails(
-            id: user.id,
-            name: user.name,
-            contactNo: user.contactNo,
-            userType: user.userType,
-            roles: user.roles
+            id: "999",
+            name: "Developer",
+            contactNo: "1234567890",
+            userType: "service",
+            roles: ["Owner"]
         )
-        self.userType = UserType(rawValue: user.userType)
-        //self.roles = user.roles.map { $0 }
+        withAnimation {
+            self.isLoggedIn = true
+        }
+    }
+    
+    func setUpUserSession(user: UserDetails) {
+        self.userType = .service
+        self.roles = [.owner]
+        self.user = user
+        withAnimation {
+            self.isLoggedIn = true
+        }
     }
     
     func saveToken(accessToken: String, refreshToken: String) {
@@ -40,26 +63,20 @@ final class SessionManager: ObservableObject {
     func logout() {
         keychain.delete(.accessToken)
         keychain.delete(.refreshToken)
-        user = nil
-        roles = []
-        userType = nil
-        isLoggedIn = false
+        
+        withAnimation {
+            user = nil
+            roles = []
+            userType = nil
+            isLoggedIn = false
+        }
     }
 }
 
 extension SessionManager {
-    
-    var isServiceUser: Bool {
-        userType == .service
-    }
-    
-    var isClientUser: Bool {
-        userType == .client
-    }
-    
-    var isCustomer: Bool {
-        userType == .customer
-    }
+    var isServiceUser: Bool { userType == .service }
+    var isClientUser: Bool { userType == .client }
+    var isCustomer: Bool { userType == .customer }
     
     func hasRole(_ role: Roles) -> Bool {
         roles.contains(role)

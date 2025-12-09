@@ -1,6 +1,10 @@
 import Foundation
 
-final class AuthRepository {
+protocol AuthRepositoryProtocol {
+    func login(email: String, password: String) async throws -> LoginResponse
+}
+
+final class AuthRepository: AuthRepositoryProtocol {
     private let api: APIClient
     private let session: SessionManager
     
@@ -12,22 +16,19 @@ final class AuthRepository {
     func login(email: String, password: String) async throws -> LoginResponse {
         let endpoint = AuthEndpoints.login(email: email, password: password)
         
-        let response: APIResponse<LoginResponse> =
-        try await api.request(endpoint: endpoint, responseType: LoginResponse.self)
+        let response: APIResponse<LoginResponse> = try await api.request(
+            endpoint: endpoint,
+            responseType: LoginResponse.self
+        )
         
-        if response.success {
-            if let user = response.data?.userDetails {
-                await session.setUpUserSession(user: user)
-            }
-            
-            if let accessToken = response.data?.accessToken, let refreshToken = response.data?.refreshToken {
-                await session.saveToken(accessToken: accessToken, refreshToken: refreshToken)
-            }
+        guard response.success, let data = response.data else {
+            let errorMessage = response.errorMessage ?? "Invalid email or password."
+            throw APIError.serverMessage(errorMessage)
         }
-        guard let data = response.data else {
-            throw NSError(domain: "Auth", code: -1,
-                          userInfo: [NSLocalizedDescriptionKey: response.errorMessage ?? "Login failed"])
-        }
+        
+        await session.setUpUserSession(user: data.userDetails)
+        await session.saveToken(accessToken: data.accessToken, refreshToken: data.refreshToken)
+        
         return data
     }
 }

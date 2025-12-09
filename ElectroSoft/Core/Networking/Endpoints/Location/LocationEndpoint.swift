@@ -40,6 +40,6 @@ extension LocationEndpoints: Endpoint {
     }
     
     var requiresAuth: Bool {
-        true  
+        true
     }
 }

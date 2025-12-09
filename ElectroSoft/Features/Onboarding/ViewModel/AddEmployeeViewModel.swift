@@ -10,7 +10,7 @@ final class AddEmployeeViewModel: ObservableObject {
     @Published var nameError: String?
     @Published var emailError: String?
     @Published var phoneError: String?
-   
+    
     @Published var roles: [CreateRoles] = []
     @Published var states: [States] = []
     @Published var districts: [District] = []
@@ -26,73 +26,88 @@ final class AddEmployeeViewModel: ObservableObject {
     @Published var didSubmitForm = false
     
     private let locationRepo: LocationRepository
-    private let addEmployeeRepo: AddEmployeeRepository
+    private let addEmployeeRepo: AddEmployeeRepositoryProtocol
     
-    init(locationRepo: LocationRepository, addEmployeeRepo: AddEmployeeRepository) {
+    init(locationRepo: LocationRepository, addEmployeeRepo: AddEmployeeRepositoryProtocol) {
         self.locationRepo = locationRepo
         self.addEmployeeRepo = addEmployeeRepo
     }
     
     func loadInitialData(session: SessionManager) async {
-        await loadRoles(session: session)
-        await fetchStates()
-    }
-    
-    func loadRoles(session: SessionManager) async {
-        guard !session.roles.isEmpty else { return }
-        do {
-            self.roles = try await addEmployeeRepo.loadPermittedRoles()
-        } catch {
-            errorMessage = "error"
-        }
-       
-    }
-    
-    func fetchStates() async {
+        try? await Task.sleep(nanoseconds: 100_000_000)
+        
         isLoading = true
         defer { isLoading = false }
         
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask { await self.loadRoles(session: session) }
+            group.addTask { await self.fetchStates() }
+        }
+    }
+    
+    func loadRoles(session: SessionManager) async {
         do {
-            self.states = try await locationRepo.getStates()
+            let fetchedRoles = try await addEmployeeRepo.loadPermittedRoles()
+            self.roles = fetchedRoles
         } catch {
-            errorMessage = "Failed to load states"
+            self.errorMessage = "Failed to load roles"
+        }
+    }
+    
+    func fetchStates() async {
+        do {
+            let fetchedStates = try await locationRepo.getStates()
+            self.states = fetchedStates
+        } catch {
+            self.errorMessage = "Failed to load states"
         }
     }
     
     func fetchDistricts() async {
-        guard let stateId else { return }
+        guard let stateId = stateId else { return }
         
         isLoading = true
         defer { isLoading = false }
         
         do {
-            self.districts = try await locationRepo.getDistricts(stateId: stateId)
+            let fetchedDistricts = try await locationRepo.getDistricts(stateId: stateId)
+            self.districts = fetchedDistricts
+            
+            self.districtId = nil
+            self.cityId = nil
+            self.cities = []
         } catch {
-            errorMessage = "Failed to load districts"
+            self.errorMessage = "Failed to load districts"
         }
     }
     
     func fetchCities() async {
-        guard let districtId else { return }
+        guard let districtId = districtId else { return }
         
         isLoading = true
         defer { isLoading = false }
         
         do {
-            self.cities = try await locationRepo.getCities(districtId: districtId)
+            let fetchedCities = try await locationRepo.getCities(districtId: districtId)
+            self.cities = fetchedCities
+            
+            self.cityId = nil
         } catch {
-            errorMessage = "Failed to load cities"
+            self.errorMessage = "Failed to load cities"
         }
     }
-   
+    
     func addEmployee() async {
-        guard isFormValid() else { return }
+        runFullValidation()
+        
+        guard isFormValid else { return }
         
         isLoading = true
         defer { isLoading = false }
         
-        print("Employee submitted!")
+        try? await Task.sleep(nanoseconds: 1_000_000_000)
         
+        print("Employee submitted successfully")
         didSubmitForm = true
         resetForm()
     }
@@ -101,59 +116,76 @@ final class AddEmployeeViewModel: ObservableObject {
 extension AddEmployeeViewModel {
     
     var isFormEmpty: Bool {
-        name.isEmpty &&
-        email.isEmpty &&
-        phoneNumber.isEmpty &&
-        roleId == nil &&
-        stateId == nil &&
-        districtId == nil &&
-        cityId == nil
+        name.isEmpty && email.isEmpty && phoneNumber.isEmpty &&
+        roleId == nil && stateId == nil && districtId == nil && cityId == nil
     }
     
     func validateName() {
+        var newError: String? = nil
         do {
             try FormValidator.validateName(name)
-            nameError = nil
-        } catch {
-            nameError = error.localizedDescription
+        } catch let error {
+            newError = error.localizedDescription
+        }
+        
+        if nameError != newError {
+            DispatchQueue.main.async {
+                self.nameError = newError
+            }
         }
     }
     
     func validateEmail() {
+        var newError: String? = nil
         do {
             try FormValidator.validateEmail(email)
-            emailError = nil
-        } catch {
-            emailError = error.localizedDescription
+        } catch let error {
+            newError = error.localizedDescription
+        }
+        
+        if emailError != newError {
+            DispatchQueue.main.async {
+                self.emailError = newError
+            }
         }
     }
     
     func validatePhone() {
+        var newError: String? = nil
         do {
             try FormValidator.validatePhone(phoneNumber)
-            phoneError = nil
-        } catch {
-            phoneError = error.localizedDescription
+        } catch let error {
+            newError = error.localizedDescription
+        }
+        
+        if phoneError != newError {
+            DispatchQueue.main.async {
+                self.phoneError = newError
+            }
         }
     }
     
-    func isFormValid() -> Bool {
-        validateName()
-        validateEmail()
-        validatePhone()
+    private func runFullValidation() {
+        do { try FormValidator.validateName(name); nameError = nil }
+        catch let error { nameError = error.localizedDescription }
         
-        return nameError == nil &&
-               emailError == nil &&
-               phoneError == nil &&
-               roleId != nil &&
-               stateId != nil &&
-               districtId != nil &&
-               cityId != nil
+        do { try FormValidator.validateEmail(email); emailError = nil }
+        catch let error { emailError = error.localizedDescription }
+        
+        do { try FormValidator.validatePhone(phoneNumber); phoneError = nil }
+        catch let error { phoneError = error.localizedDescription }
+    }
+    
+    var isFormValid: Bool {
+        guard !name.isEmpty, !email.isEmpty, !phoneNumber.isEmpty else { return false }
+        
+        if nameError != nil || emailError != nil || phoneError != nil { return false }
+        
+        return roleId != nil && stateId != nil && districtId != nil && cityId != nil
     }
     
     func resetForm() {
-        guard didSubmitForm else { return }
-        guard !isFormEmpty else { return }
+        guard !isLoading else { return }
         
         name = ""
         email = ""

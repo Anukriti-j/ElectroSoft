@@ -4,7 +4,7 @@ import SwiftUI
 @MainActor
 final class LoginViewModel: ObservableObject {
     @Published var email = ""
-    @Published var password = "" 
+    @Published var password = ""
     
     @Published var emailTouched = false
     @Published var passwordTouched = false
@@ -18,9 +18,9 @@ final class LoginViewModel: ObservableObject {
     @Published var alert: AppAlert?
     @Published var isAlertPresented = false
     
-    private let authRepo: AuthRepository
+    private let authRepo: AuthRepositoryProtocol
     
-    init(authRepo: AuthRepository) {
+    init(authRepo: AuthRepositoryProtocol) {
         self.authRepo = authRepo
     }
     
@@ -61,12 +61,8 @@ final class LoginViewModel: ObservableObject {
         defer { isLoading = false }
         
         do {
-            let response = try await authRepo.login(email: email, password: password)
-            alert = AppAlert.simple(
-                title: "Login Success",
-                message: "Welcome, \(response.userDetails.name)!"
-            )
-            isAlertPresented = true
+            let _ = try await authRepo.login(email: email, password: password)
+            
         } catch {
             alert = AppAlert.simple(
                 title: "Login Failed",

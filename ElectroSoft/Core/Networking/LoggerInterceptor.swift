@@ -3,7 +3,7 @@ import Foundation
 struct LoggerInterceptor {
     
     static func logRequest(_ request: URLRequest) {
-        #if DEBUG
+#if DEBUG
         print("\n REQUEST")
         
         if let method = request.httpMethod, let url = request.url?.absoluteString {
@@ -20,11 +20,11 @@ struct LoggerInterceptor {
         } else {
             print("Body: <empty>")
         }
-        #endif
+#endif
     }
     
     static func logResponse(data: Data, response: URLResponse) {
-        #if DEBUG
+#if DEBUG
         print("\n RESPONSE ")
         
         if let http = response as? HTTPURLResponse {
@@ -34,7 +34,7 @@ struct LoggerInterceptor {
         let body = String(data: data, encoding: .utf8) ?? "<Invalid Data>"
         print("Response Body:", redactSensitiveJSON(body))
         print("====================================================\n")
-        #endif
+#endif
     }
     
     private static func redactHeaders(_ headers: [String: String]) -> [String: String] {

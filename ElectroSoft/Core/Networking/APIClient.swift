@@ -1,65 +1,85 @@
 import Foundation
 
 protocol NetworkingProtocol {
-    func request<T: Codable>(
-        endpoint: Endpoint,
-        responseType: T.Type
-    ) async throws -> APIResponse<T>
+    func request<T: Codable>(endpoint: Endpoint, responseType: T.Type) async throws -> APIResponse<T>
 }
 
 final class APIClient: NetworkingProtocol {
     
     private let keychain: KeyChainManaging
-
+    private let session: URLSession
+    
     init(keychain: KeyChainManaging) {
         self.keychain = keychain
+        
+        let config = URLSessionConfiguration.default
+        config.timeoutIntervalForRequest = 10
+        self.session = URLSession(configuration: config)
     }
-
+    
     func request<T: Codable>(
         endpoint: Endpoint,
         responseType: T.Type
     ) async throws -> APIResponse<T> {
-
-        var request = endpoint.urlRequest(baseURL: APIConstants.baseURL)
+        
+        let request = try RequestBuilder().build(
+            from: endpoint,
+            baseURL: APIConstants.baseURL,
+            token: endpoint.requiresAuth ? keychain.read(.accessToken) : nil
+        )
         
         LoggerInterceptor.logRequest(request)
-
-        if endpoint.requiresAuth,
-           let token = keychain.read(.accessToken) {
-            request.addValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
-
-        let (data, response) = try await URLSession.shared.data(for: request)
+        
+        let (data, response) = try await session.data(for: request)
         LoggerInterceptor.logResponse(data: data, response: response)
-        let http = response as! HTTPURLResponse
-
-        // Token expired → refresh → retry
+        
+        guard let http = response as? HTTPURLResponse else {
+            throw APIError.invalidResponse
+        }
+        
         if http.statusCode == 401, endpoint.requiresAuth {
+            print("Token expired. Attempting refresh...")
             let refreshed = try await refreshAccessToken()
+            
             if refreshed {
                 return try await self.request(endpoint: endpoint, responseType: responseType)
+            } else {
+                throw APIError.unauthorized
             }
         }
-
-        return try JSONDecoder().decode(APIResponse<T>.self, from: data)
+        
+        do {
+            return try JSONDecoder().decode(APIResponse<T>.self, from: data)
+        } catch {
+            throw APIError.decodingError
+        }
     }
-
-    // MARK: - Refresh Token Flow
-    func refreshAccessToken() async throws -> Bool {
-        guard let refresh = keychain.read(.refreshToken) else { return false }
-
-        let endpoint = AuthEndpoints.refreshToken(refresh)
-
-        let result: APIResponse<LoginResponse> =
-            try await request(endpoint: endpoint, responseType: LoginResponse.self)
-
-        guard result.success, let data = result.data else {
+    
+    private func refreshAccessToken() async throws -> Bool {
+        guard let refreshToken = keychain.read(.refreshToken) else { return false }
+        
+        let endpoint = AuthEndpoints.refreshToken(refreshToken)
+        
+        let request = try RequestBuilder().build(
+            from: endpoint,
+            baseURL: APIConstants.baseURL,
+            token: nil
+        )
+        
+        let (data, response) = try await session.data(for: request)
+        
+        guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {
             return false
         }
-
-        keychain.save(.accessToken, value: data.accessToken)
-        keychain.save(.refreshToken, value: data.refreshToken)
-
-        return true
+        
+        if let result = try? JSONDecoder().decode(APIResponse<LoginResponse>.self, from: data),
+           let tokens = result.data {
+            
+            keychain.save(.accessToken, value: tokens.accessToken)
+            keychain.save(.refreshToken, value: tokens.refreshToken)
+            return true
+        }
+        
+        return false
     }
 }

@@ -4,103 +4,181 @@ struct LoginView: View {
     @StateObject private var viewModel: LoginViewModel
     @EnvironmentObject var themeManager: ThemeManager
     
-    init(authRepo: AuthRepository) {
-        _viewModel = StateObject(wrappedValue: LoginViewModel(authRepo: authRepo))
+    @FocusState private var focusedField: Field?
+    
+    enum Field {
+        case email
+        case password
+    }
+    
+    init(container: AppDependencyContainer) {
+        _viewModel = StateObject(wrappedValue: LoginViewModel(authRepo: container.authRepository))
     }
     
     var body: some View {
-        VStack(spacing: 16) {
+        ZStack {
+            themeManager.currentTheme.background
+                .ignoresSafeArea()
             
-            Text("ElectroSoft")
-                .font(.system(size: 32, weight: .bold))
-                .foregroundColor(themeManager.colors.primary)
-            
-            Text("LOG IN")
-                .font(.title2.bold())
-                .padding(.bottom, 8)
-            
-            VStack(alignment: .leading, spacing: 8) {
-                TextField("Email", text: $viewModel.email)
-                    .themedInput()
-                    .onTapGesture {
-                        viewModel.emailTouched = true
-                    }
-                    .onChange(of: viewModel.email) { _ in
-                        viewModel.validateEmail()
-                    }
+            VStack(spacing: 0) {
                 
-                if viewModel.emailTouched, let error = viewModel.emailError {
-                    Text(error)
-                        .foregroundColor(themeManager.colors.error)
-                        .font(.caption)
-                }
-            }
-           
-            VStack(alignment: .leading, spacing: 8) {
-                ZStack(alignment: .trailing) {
+                VStack(spacing: 12) {
+                    Text("ElectroSoft")
+                        .font(.system(size: 34, weight: .bold))
+                        .foregroundColor(themeManager.currentTheme.text)
                     
-                    Group {
-                        if viewModel.showPassword {
-                            TextField("Password", text: $viewModel.password)
-                        } else {
-                            SecureField("Password", text: $viewModel.password)
-                        }
-                    }
-                    .themedInput()
-                    .onTapGesture {
-                        viewModel.passwordTouched = true
-                    }
-                    .onChange(of: viewModel.password) { _ in
-                        viewModel.validatePassword()
-                    }
-                    
-                    Button(action: {
-                        viewModel.showPassword.toggle()
-                    }) {
-                        Image(systemName: viewModel.showPassword ? "eye" : "eye.slash")
-                            .foregroundStyle(.gray)
-                    }
-                    .padding(.trailing, 12)
+                    Text("Sign in to your account")
+                        .font(.subheadline)
+                        .foregroundColor(themeManager.currentTheme.text.opacity(0.6))
                 }
+                .padding(.top, 50)
                 
-                if viewModel.passwordTouched, let error = viewModel.passwordError {
-                    Text(error)
-                        .foregroundColor(themeManager.colors.error)
+                Spacer()
+                
+                VStack(spacing: 24) {
+                    emailField
+                    passwordField
+                    
+                    loginButton
+                        .padding(.top, 8)
+                }
+                .padding(.horizontal, 24)
+                
+                Spacer()
+                
+                VStack(spacing: 20) {
+                    Text("Customize Appearance")
                         .font(.caption)
+                        .fontWeight(.medium)
+                        .foregroundColor(themeManager.currentTheme.text.opacity(0.5))
+                        .textCase(.uppercase)
+                        .kerning(1.2)
+                    
+                    ThemeSelectorView()
                 }
+                .padding(.bottom, 20)
+                .padding(.horizontal)
             }
-            
-            Button {
-                Task { await viewModel.login() }
-            } label: {
-                if viewModel.isLoading {
-                    ProgressView().tint(.white)
-                } else {
-                    Text("Login")
-                        .foregroundColor(.white)
-                }
-            }
-            .disabled(!viewModel.isFormValid || viewModel.isLoading)
-            .themedButton(isDisabled: !viewModel.isFormValid || viewModel.isLoading)
-            
-            
         }
-        .padding(.horizontal)
+        .onChange(of: focusedField) { oldValue, newValue in
+            if oldValue == .email { viewModel.emailTouched = true }
+            if oldValue == .password { viewModel.passwordTouched = true }
+        }
         .alert(isPresented: $viewModel.isAlertPresented) {
             Alert(
-                title: Text(viewModel.alert?.title ?? ""),
+                title: Text(viewModel.alert?.title ?? "Error"),
                 message: Text(viewModel.alert?.message ?? ""),
                 dismissButton: .default(Text(viewModel.alert?.primaryButtonTitle ?? "OK"))
             )
         }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+        .onTapGesture {
+            focusedField = nil
+        }
     }
-}
-
-#Preview {
-    LoginView(
-        authRepo: AuthRepository(
-            api: APIClient(keychain: KeyChainManager()),
-            session: SessionManager(keychain: KeyChainManager())
+    
+    private var emailField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Email Address")
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundColor(themeManager.currentTheme.text.opacity(0.7))
+            
+            TextField("Enter email", text: $viewModel.email)
+                .focused($focusedField, equals: .email)
+                .textInputAutocapitalization(.never)
+                .keyboardType(.emailAddress)
+                .submitLabel(.next)
+                .onSubmit { focusedField = .password }
+                .onChange(of: viewModel.email) { _,_ in viewModel.validateEmail() }
+                .themedInput(
+                    isFocused: focusedField == .email,
+                    error: viewModel.emailError,
+                    isTouched: viewModel.emailTouched
+                )
+            
+            if viewModel.emailTouched, let error = viewModel.emailError {
+                Text(error)
+                    .foregroundColor(themeManager.currentTheme.error)
+                    .font(.caption)
+                    .transition(.opacity)
+            }
+        }
+    }
+    
+    private var passwordField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Password")
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundColor(themeManager.currentTheme.text.opacity(0.7))
+            
+            HStack {
+                if viewModel.showPassword {
+                    TextField("Enter password", text: $viewModel.password)
+                        .focused($focusedField, equals: .password)
+                } else {
+                    SecureField("Enter password", text: $viewModel.password)
+                        .focused($focusedField, equals: .password)
+                }
+                
+                Button(action: {
+                    withAnimation { viewModel.showPassword.toggle() }
+                }) {
+                    Image(systemName: viewModel.showPassword ? "eye" : "eye.slash")
+                        .foregroundStyle(themeManager.currentTheme.text.opacity(0.5))
+                }
+            }
+            .themedInput(
+                isFocused: focusedField == .password,
+                error: viewModel.passwordError,
+                isTouched: viewModel.passwordTouched
+            )
+            .onChange(of: viewModel.password) { _,_ in viewModel.validatePassword() }
+            .submitLabel(.go)
+            .onSubmit {
+                Task { await viewModel.login() }
+            }
+            
+            if viewModel.passwordTouched, let error = viewModel.passwordError {
+                Text(error)
+                    .foregroundColor(themeManager.currentTheme.error)
+                    .font(.caption)
+                    .transition(.opacity)
+            }
+        }
+    }
+    
+    private var loginButton: some View {
+        Button {
+            focusedField = nil
+            Task { await viewModel.login() }
+        } label: {
+            ZStack {
+                if viewModel.isLoading {
+                    ProgressView()
+                        .tint(.white)
+                } else {
+                    Text("Log In")
+                        .fontWeight(.bold)
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding()
+        }
+        .background(
+            (viewModel.isFormValid && !viewModel.isLoading)
+            ? themeManager.currentTheme.primary
+            : Color.gray.opacity(0.3)
         )
-    )
+        .foregroundColor(.white)
+        .cornerRadius(12)
+        .disabled(!viewModel.isFormValid || viewModel.isLoading)
+        .shadow(
+            color: (viewModel.isFormValid && !viewModel.isLoading) ? themeManager.currentTheme.primary.opacity(0.4) : Color.clear,
+            radius: 8, x: 0, y: 4
+        )
+        .scaleEffect(viewModel.isLoading ? 0.98 : 1.0)
+        .animation(.spring(), value: viewModel.isLoading)
+    }
 }
