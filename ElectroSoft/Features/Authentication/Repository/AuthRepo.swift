@@ -2,6 +2,7 @@ import Foundation
 
 protocol AuthRepositoryProtocol {
     func login(email: String, password: String) async throws -> LoginResponse
+    func mockLogin() async 
 }
 
 final class AuthRepository: AuthRepositoryProtocol {
@@ -33,5 +34,11 @@ final class AuthRepository: AuthRepositoryProtocol {
         await session.saveToken(accessToken: data.accessToken, refreshToken: data.refreshToken)
         
         return data
+    }
+    
+    @MainActor
+    func mockLogin() {
+        session.isLoggedIn = true
+        session.restoreSession()
     }
 }

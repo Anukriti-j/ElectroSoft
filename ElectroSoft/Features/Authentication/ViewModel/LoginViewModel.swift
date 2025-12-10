@@ -71,4 +71,19 @@ final class LoginViewModel: ObservableObject {
             isAlertPresented = true
         }
     }
+    
+    func mockLogin() async {
+        emailTouched = true
+        passwordTouched = true
+        
+        validateEmail()
+        validatePassword()
+        
+        guard isFormValid else { return }
+        
+        isLoading = true
+        defer { isLoading = false }
+        
+        await authRepo.mockLogin()
+    }
 }

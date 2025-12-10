@@ -1,115 +1,157 @@
 import SwiftUI
 
 struct MainTabView: View {
-    @EnvironmentObject var session: SessionManager
-    @EnvironmentObject var themeManager: ThemeManager
-    @EnvironmentObject var networkMonitor: NetworkMonitor
-    @State var selectedTab: TabItem = .dashboard
-    @State var isProfileOpen = false
-    private let tabBarHeight: CGFloat = 90
+    
+    @EnvironmentObject private var session: SessionManager
+    @EnvironmentObject private var themeManager: ThemeManager
+    @EnvironmentObject private var networkMonitor: NetworkMonitor
+    
+    @State private var selectedTab: TabItem = .dashboard
+    @State private var isProfileOpen = false
     
     let container: AppDependencyContainer
+    private let tabBarHeight: CGFloat = 90
     
     init(container: AppDependencyContainer) {
         self.container = container
     }
     
+    private var roleTabs: [TabItem] {
+        TabResolver.resolveTabs(
+            roles: session.roles,
+            userType: session.userType ?? .unknown
+        )
+    }
     
     var body: some View {
-        let roleTabs = tabs(forRole: session.roles, forType: session.userType ?? .unknown)
-        
-        ZStack(alignment: .leading) {
+        NavigationStack {
             ZStack(alignment: .bottom) {
-                NavigationStack {
-                    selectedTab
-                        .destination(container: container)
-                        .navigationTitle(selectedTab.title)
-                        .navigationBarTitleDisplayMode(.inline)
-                        .toolbar {
-                            ToolbarItem(placement: .navigationBarLeading) {
-                                Button {
-                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
-                                        isProfileOpen.toggle()
-                                    }
-                                } label: {
-                                    Image(systemName: "person.crop.circle.fill")
-                                        .resizable()
-                                        .foregroundStyle(themeManager.currentTheme.primary)
-                                        .frame(width: 42, height: 42)
-                                }
-                            }
-                        }
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .ignoresSafeArea(.keyboard)
+                selectedTab
+                    .destination(container: container)
                 
                 if !roleTabs.contains(.fallback) {
                     FloatingTabBar(selected: $selectedTab, tabs: roleTabs)
-                        .padding(.horizontal, 4)
-                        .padding(.bottom, 0)
                 }
                 
                 if !networkMonitor.isConnected {
                     NoInternetView()
                         .padding(.bottom, tabBarHeight)
                         .transition(.move(edge: .bottom).combined(with: .opacity))
-                        .animation(.spring(), value: networkMonitor.isConnected)
+                }
+            }
+            .navigationTitle(selectedTab.title)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(action: toggleProfile) {
+                        Image(systemName: "person.crop.circle.fill")
+                            .resizable()
+                            .foregroundStyle(themeManager.currentTheme.primary)
+                            .frame(width: 32, height: 32)
+                    }
                 }
             }
             .ignoresSafeArea(.all, edges: .bottom)
-            
-            if isProfileOpen {
-                Color.black.opacity(0.4)
-                    .ignoresSafeArea()
-                    .transition(.opacity)
-                    .onTapGesture {
-                        withAnimation { isProfileOpen = false }
-                    }
-            }
-            
-            UserProfileView(isOpen: $isProfileOpen)
-                .frame(width: 300)
-                .frame(maxHeight: .infinity)
-                .shadow(color: Color.black.opacity(0.2), radius: 5, x: 0, y: 0)
-                .offset(x: isProfileOpen ? 0 : -300)
-                .transition(.move(edge: .leading))
-                .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isProfileOpen)
         }
-        .onChange(of: session.roles) { _, newRoles in
-            let newTabs = tabs(forRole: newRoles, forType: session.userType ?? .unknown)
-            if let first = newTabs.first {
-                selectedTab = first
+        .overlay(alignment: .leading) {
+            ZStack(alignment: .leading) {
+                if isProfileOpen {
+                    Color.black.opacity(0.4)
+                        .ignoresSafeArea()
+                        .onTapGesture(perform: closeProfile)
+                        .transition(.opacity)
+                }
+                
+                UserProfileView(isOpen: $isProfileOpen)
+                    .frame(width: 300)
+                    .offset(x: isProfileOpen ? 0 : -300)
+                    .frame(maxHeight: .infinity)
+                    .shadow(color: Color.black.opacity(0.2), radius: 5)
             }
+            .animation(.spring(response: 0.4, dampingFraction: 0.8), value: isProfileOpen)
+        }
+        .onChange(of: session.roles, handleRoleChange)
+        .sheet(isPresented: $session.needPasswordReset) {
+            ResetPasswordView(session: _session)
+                .environmentObject(themeManager)
+                .environmentObject(session)
+        }
+    }
+}
+
+
+private extension MainTabView {
+    func toggleProfile() {
+        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+            isProfileOpen.toggle()
         }
     }
     
-    func tabs(forRole roles: [Roles], forType type: UserType) -> [TabItem] {
-        if type == .service {
-            if roles.contains(.owner) ||
-                roles.contains(.stateHead) ||
-                roles.contains(.districtHead) ||
-                roles.contains(.talukaHead) {
-                return [.dashboard, .addEmployee, .employee, .client]
-            }
-            
-            if roles.contains(.representative) ||
-                roles.contains(.support) ||
-                roles.contains(.worker) {
-                return [.dashboard, .client, .invoice, .plan]
-            }
-        } else if type == .client {
-            if roles.contains(.owner) ||
-                roles.contains(.stateHead) ||
-                roles.contains(.districtHead) ||
-                roles.contains(.talukaHead) ||
-                roles.contains(.support) {
-                return [.dashboard, .employee, .bill, .issues]
-            }
-        } else if type == .customer {
-            if roles.contains(.customer) {
-                return [.bill, .issues]
-            }
+    func closeProfile() {
+        withAnimation { isProfileOpen = false }
+    }
+    
+}
+
+enum TabResolver {
+    
+    static func resolveTabs(
+        roles: [Roles],
+        userType: UserType
+    ) -> [TabItem] {
+        
+        switch userType {
+        case .service:
+            return resolveServiceTabs(roles)
+        case .client:
+            return resolveClientTabs(roles)
+        case .customer:
+            return resolveCustomerTabs(roles)
+        default:
+            return [.fallback]
+        }
+    }
+    
+    private static func resolveServiceTabs(_ roles: [Roles]) -> [TabItem] {
+        if roles.containsAny(of: [.owner, .stateHead, .districtHead, .talukaHead]) {
+            return [.dashboard, .addEmployee, .employee, .client]
+        }
+        if roles.containsAny(of: [.representative, .support, .worker]) {
+            return [.dashboard, .client, .invoice, .plan]
         }
         return [.fallback]
     }
+    
+    private static func resolveClientTabs(_ roles: [Roles]) -> [TabItem] {
+        if roles.containsAny(of: [.owner, .stateHead, .districtHead, .talukaHead, .support]) {
+            return [.dashboard, .employee, .bill, .issues]
+        }
+        return [.fallback]
+    }
+    
+    private static func resolveCustomerTabs(_ roles: [Roles]) -> [TabItem] {
+        roles.contains(.customer) ? [.bill, .issues] : [.fallback]
+    }
 }
+
+extension Array where Element == Roles {
+    func containsAny(of roles: [Roles]) -> Bool {
+        contains { roles.contains($0) }
+    }
+}
+
+private extension MainTabView {
+    func handleRoleChange(old: [Roles], new: [Roles]) {
+        let updatedTabs = roleTabs
+        if let first = updatedTabs.first {
+            selectedTab = first
+        }
+    }
+}
+
+#Preview(body: {
+    MainTabView(container: AppDependencyContainer())
+        .environmentObject(SessionManager(keychain: KeyChainManager()))
+        .environmentObject(NetworkMonitor())
+        .environmentObject(ThemeManager())
+})

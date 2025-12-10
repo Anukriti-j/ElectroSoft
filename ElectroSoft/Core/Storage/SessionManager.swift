@@ -3,10 +3,11 @@ import SwiftUI
 @MainActor
 final class SessionManager: ObservableObject {
     
-    @Published var isLoggedIn = true
+    @Published var isLoggedIn = false
     @Published var user: UserDetails?
     @Published var userType: UserType?
     @Published var roles: [Roles] = []
+    @Published var needPasswordReset = false
     
     private let keychain: KeyChainManaging
     
@@ -22,7 +23,8 @@ final class SessionManager: ObservableObject {
             userType: "service",
             roles: ["Owner"]
         )
-        self.isLoggedIn = true
+        self.isLoggedIn = false
+        self.needPasswordReset = true
     }
     
     func restoreSession() {
@@ -41,9 +43,9 @@ final class SessionManager: ObservableObject {
             userType: "service",
             roles: ["Owner"]
         )
-        withAnimation {
-            self.isLoggedIn = true
-        }
+//        withAnimation {
+//            self.isLoggedIn = true
+//        }
     }
     
     func setUpUserSession(user: UserDetails) {
@@ -52,7 +54,12 @@ final class SessionManager: ObservableObject {
         self.user = user
         withAnimation {
             self.isLoggedIn = true
+           // self.needPasswordReset = needReset field from API to resetPassword or not
         }
+    }
+    
+    func didCompletePasswordReset() {
+        self.needPasswordReset = false
     }
     
     func saveToken(accessToken: String, refreshToken: String) {
@@ -69,6 +76,7 @@ final class SessionManager: ObservableObject {
             roles = []
             userType = nil
             isLoggedIn = false
+            needPasswordReset = false
         }
     }
 }

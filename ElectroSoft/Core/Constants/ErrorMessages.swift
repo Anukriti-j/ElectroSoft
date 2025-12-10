@@ -10,13 +10,16 @@ enum ErrorMessages: LocalizedError {
     case unknown
     case invalidData
     case requiredField
+    case allRequiredFields
     case requiredEmail
     case requiredPassword
+    case invalidPassword
     case emptyName
     case invalidEmail
     case invalidPhone
     case requiredPhone
     case invalidCredential
+    case passwordMismatch
 }
 
 extension ErrorMessages {
@@ -54,6 +57,12 @@ extension ErrorMessages {
             return "Phone number is required."
         case .invalidCredential:
             return "Invalid Credential"
+        case .allRequiredFields:
+            return "All fields are required"
+        case .invalidPassword:
+            return "Password must be at least 8 characters long."
+        case .passwordMismatch:
+            return "Passwords do not match."
         }
     }
 }

@@ -30,6 +30,7 @@ struct SortMenuView: View {
             HStack {
                 Text(selection?.displayName ?? title)
                     .font(.subheadline)
+                    .foregroundStyle(themeManager.currentTheme.primary)
                 
                 Image(systemName: "chevron.down")
                     .font(.caption)

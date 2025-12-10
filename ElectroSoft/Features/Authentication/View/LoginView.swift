@@ -6,7 +6,7 @@ struct LoginView: View {
     
     @FocusState private var focusedField: Field?
     
-    enum Field {
+    private enum Field {
         case email
         case password
     }
@@ -137,7 +137,7 @@ struct LoginView: View {
             .onChange(of: viewModel.password) { _,_ in viewModel.validatePassword() }
             .submitLabel(.go)
             .onSubmit {
-                Task { await viewModel.login() }
+                Task { await viewModel.mockLogin() }
             }
             
             if viewModel.passwordTouched, let error = viewModel.passwordError {
@@ -152,7 +152,7 @@ struct LoginView: View {
     private var loginButton: some View {
         Button {
             focusedField = nil
-            Task { await viewModel.login() }
+            Task { await viewModel.mockLogin() }
         } label: {
             ZStack {
                 if viewModel.isLoading {
@@ -181,4 +181,9 @@ struct LoginView: View {
         .scaleEffect(viewModel.isLoading ? 0.98 : 1.0)
         .animation(.spring(), value: viewModel.isLoading)
     }
+}
+
+#Preview {
+    LoginView(container: AppDependencyContainer())
+        .environmentObject(ThemeManager())
 }
