@@ -10,6 +10,15 @@ ElectroSoft is a SwiftUI-based iOS app for managing utility operations. It inclu
 - Network reachability monitoring with an in-app banner for offline states.
 - Modular dependency container wiring API client, repositories, storage, and theme/session/network managers.
 
+## Screenshots
+<img width="453" height="927" alt="Screenshot 2025-12-23 at 5 48 59 PM" src="https://github.com/user-attachments/assets/376f7618-abda-4df7-a6a0-08697021b25c" />
+<img width="456" height="893" alt="Screenshot 2025-12-23 at 5 48 51 PM" src="https://github.com/user-attachments/assets/86a531fa-1fca-4f2c-a682-18d76cf83742" />
+<img width="444" height="922" alt="Screenshot 2025-12-23 at 5 29 44 PM" src="https://github.com/user-attachments/assets/04df937a-67b4-4dbd-804b-8c9a07f2c6a4" />
+<img width="438" height="912" alt="Screenshot 2025-12-23 at 5 29 17 PM" src="https://github.com/user-attachments/assets/eab2b25a-4686-48cd-84e9-9d23f82289bb" />
+<img width="445" height="916" alt="Screenshot 2025-12-23 at 5 29 04 PM" src="https://github.com/user-attachments/assets/c16a4aff-4d63-4c2d-b201-c08f437363d4" />
+<img width="434" height="911" alt="Screenshot 2025-12-23 at 5 28 43 PM" src="https://github.com/user-attachments/assets/0bf569cf-8388-4af6-bf5e-4a88173df8eb" />
+<img width="437" height="912" alt="Screenshot 2025-12-23 at 5 28 13 PM" src="https://github.com/user-attachments/assets/d549ca95-87e2-4496-bd86-17ec18ff7a78" />
+
 ## Tech Stack
 - Swift 5.10+, SwiftUI, NavigationStack, async/await.
 - MVVM with repositories for API access.
