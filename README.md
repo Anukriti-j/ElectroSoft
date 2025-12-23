@@ -18,6 +18,7 @@ ElectroSoft is a SwiftUI-based iOS app for managing utility operations. It inclu
 <img width="445" height="916" alt="Screenshot 2025-12-23 at 5 29 04 PM" src="https://github.com/user-attachments/assets/c16a4aff-4d63-4c2d-b201-c08f437363d4" />
 <img width="434" height="911" alt="Screenshot 2025-12-23 at 5 28 43 PM" src="https://github.com/user-attachments/assets/0bf569cf-8388-4af6-bf5e-4a88173df8eb" />
 <img width="437" height="912" alt="Screenshot 2025-12-23 at 5 28 13 PM" src="https://github.com/user-attachments/assets/d549ca95-87e2-4496-bd86-17ec18ff7a78" />
+<img width="431" height="892" alt="Screenshot 2025-12-23 at 6 07 16 PM" src="https://github.com/user-attachments/assets/f9303f91-cfc4-4d69-bc75-31ed5cb977b9" />
 
 ## Tech Stack
 - Swift 5.10+, SwiftUI, NavigationStack, async/await.
